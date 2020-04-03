@@ -21,7 +21,7 @@ import os
 source_url = 'https://www.ncei.noaa.gov/data/local-climatological-data/access/'
 year = '2019'
 
-def download_csv(id, filename, year):
+def download_csv(id, filename, year, air_df):
     """
     weather_data_cleanup.ipynb code
     Saves a csv file with weather data for station with given id for
@@ -68,7 +68,10 @@ def download_csv(id, filename, year):
     df.HourlyStationPressure = clean_up(df, 'HourlyStationPressure')
     df.HourlyVisibility = clean_up(df, 'HourlyVisibility')
     df.HourlyWindSpeed = clean_up(df, 'HourlyWindSpeed')
-    df.to_csv(os.path.join('', id + '.csv'), index=False)
+    # get iata_code
+    iata_code = air_df[air_df['station_id'] == 'WBAN:' + str(short_id)].iloc[0]['iata_code']
+    df['iata_code'] = iata_code
+    df.to_csv(os.path.join('weather-data-2', iata_code + '.csv'), index=False)
 
 
 def retrieve_files():
@@ -85,14 +88,14 @@ def retrieve_files():
 
 if __name__ == '__main__':
     file = retrieve_files()
-    df = pd.read_csv('airports_stations.csv')
+    df = pd.read_csv('airports_stations_manual.csv')
     ids = np.unique(df[['station_id']]).tolist()
 
     for id in ids:
         if id[:4] == 'WBAN':
             short_id = id[5:]
             try:
-                download_csv(short_id, file[short_id], year)
+                download_csv(short_id, file[short_id], year, df)
             except KeyError as ke:
                 print(f'Exception occurred for {short_id}, data for this station is not available for the given year')
             except Exception as e:
