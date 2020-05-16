@@ -1,0 +1,15 @@
+cached property, load files only on server start
+input builder
+Facade Design Pattern for Weather API calls
+Singleton NNModel
+
+STEPS
+• load airport_code : coords file
+
+WeatherAPI
+? get current time from datetime.current? or receive it from the request
+? assert that a certain method was called in get_weather
+
+requirements:
+scikit-learn=0.22.1
+
