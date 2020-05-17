@@ -47,52 +47,66 @@ def test_exceeds_15_days(dt1, dt2):
 
 
 @pytest.mark.parametrize(
-    "lat,long,dt",
+    "lat,long,dt,location",
     [
         (
-                40.683126,
-                -73.944897,
-                datetime.strptime('17/05/20 11:57', WeatherAPI.datetime_format)
-        )
-    ]
-)
-def test_get_forecast(lat, long, dt):
-    weather = WeatherAPI._get_forecast(lat, long, dt)
-    print(weather)
-
-
-@pytest.mark.parametrize(
-    "lat,long,dt",
-    [
-        (
-                40.683126,
-                -73.944897,
-                datetime.strptime('17/06/20 11:57', WeatherAPI.datetime_format)
-        )
-    ]
-)
-def test_get_historical(lat, long, dt):
-    weather = WeatherAPI._get_historical(lat, long, dt)
-    print(weather)
-
-
-@pytest.mark.parametrize(
-    "lat,long,dt",
-    [
-        (
-                40.683126,
-                -73.944897,
-                '17/06/20 11:57'
+            40.683126,
+            -73.944897,
+            datetime.strptime('17/05/20 11:57', WeatherAPI.datetime_format),
+            'x'
         ),
         (
-                40.683126,
-                -73.944897,
-                '17/05/20 11:57'
+            40.683126,
+            -73.944897,
+            datetime.strptime('17/05/20 11:57', WeatherAPI.datetime_format),
+            'y'
         )
     ]
 )
-def test_get_weather(lat, long, dt):
-    WeatherAPI.get_weather(lat, long, dt)
+def test_get_forecast(lat, long, dt, location):
+    weather = WeatherAPI._get_forecast(lat, long, dt, location)
+    assert weather.keys() == {'temperature_'+location, 'precipitation_'+location,
+                              'visibility_'+location, 'wind_speed_'+location}
+
+
+@pytest.mark.parametrize(
+    "lat,long,dt,location",
+    [
+        (
+            40.683126,
+            -73.944897,
+            datetime.strptime('17/06/20 11:57', WeatherAPI.datetime_format),
+            'x'
+        )
+    ]
+)
+def test_get_historical(lat, long, dt, location):
+    weather = WeatherAPI._get_historical(lat, long, dt, location)
+    assert weather.keys() == {'temperature_' + location, 'precipitation_' + location,
+                              'visibility_' + location, 'wind_speed_' + location}
+
+
+@pytest.mark.parametrize(
+    "lat,long,dt,location",
+    [
+        (
+            40.683126,
+            -73.944897,
+            '17/06/20 11:57',
+            'x'
+        ),
+        (
+            40.683126,
+            -73.944897,
+            '17/05/20 11:57',
+            'y'
+        )
+    ]
+)
+def test_get_weather(lat, long, dt, location):
+    weather = WeatherAPI.get_weather(lat, long, dt, location)
+    assert weather.keys() == {'temperature_' + location, 'precipitation_' + location,
+                              'visibility_' + location, 'wind_speed_' + location}
 
 
 if __name__ == '__main__':

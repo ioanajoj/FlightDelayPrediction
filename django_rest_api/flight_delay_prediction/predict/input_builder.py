@@ -1,42 +1,94 @@
 import pickle
 import glob
+from datetime import datetime
+
 import numpy as np
 import pandas as pd
-
-from flight_delay_prediction.constant import CATEGORICAL_INPUTS, CONTINUOUS_INPUTS
-from flight_delay_prediction.predict.errors import *
 import tensorflow.keras.models as models
+
+from flight_delay_prediction.constant import CATEGORICAL_INPUTS, CONTINUOUS_INPUTS, AIRPORTS, INPUT_NAMES
+from flight_delay_prediction.predict.errors import *
+from flight_delay_prediction.predict.weather_api import WeatherAPI
 from flight_delay_prediction.utils import cached_classproperty
+from flight_delay_prediction.utils import get_minutes_timedelta
 
 
 class ModelInputBuilder:
-    def __init__(self, input_names):
-        self.input_names = input_names
+    """
+    Params need to contain values for keys:
+    carrier_code, origin_airport, destination_airport, origin_dt, destination_dt
+    """
+
+    def __init__(self, params):
+        assert params.keys() == {'carrier_code',
+                                 'origin_airport', 'destination_airport',
+                                 'origin_dt', 'destination_dt'}
         self.inputs = {}
+        self.params = params
+        self.set_categorical()
+        self.set_continuous()
 
-    def set_weather(self, iata_code_1, iata_code_2):
-        pass
+    def get_weather(self):
+        weather = {}
+        weather_origin = ModelInputBuilder._access_weather(self.params['origin_airport'],
+                                                           self.params['origin_dt'],
+                                                           AIRPORTS['origin'])
+        weather.update(weather_origin)
+        weather_destination = ModelInputBuilder._access_weather(self.params['destination_airport'],
+                                                                self.params['destination_dt'],
+                                                                AIRPORTS['destination'])
+        weather.update(weather_destination)
+        return weather
 
-    def set(self, name, value):
-        try:
-            self.inputs[name] = value
-        except KeyError:
-            raise NoPreprocessObjectError(f'Could not find a preprocessing item for {name} input')
+    @staticmethod
+    def _access_weather(iata_code, dt, location):
+        coords = Resources.airport_codes[iata_code]
+        weather = WeatherAPI.get_weather(coords['lat'], coords['long'], dt, location)
+        return weather
+
+    def set_categorical(self):
+        categorical = {'carrier_code': self.params['carrier_code'],
+                       'origin_airport': self.params['origin_airport'],
+                       'destination_airport': self.params['destination_airport'],
+                       'day': datetime.strptime(self.params['origin_dt'], WeatherAPI.datetime_format).day,
+                       'month': datetime.strptime(self.params['origin_dt'], WeatherAPI.datetime_format).month,
+                       'weekday': datetime.strptime(self.params['origin_dt'], WeatherAPI.datetime_format).weekday()}
+        self.inputs.update(categorical)
+        assert categorical.keys() == CATEGORICAL_INPUTS
+
+    def set_continuous(self):
+        continuous = self.get_weather()
+        # set number of seconds from midnight
+        departure = datetime.strptime(self.params['origin_dt'], WeatherAPI.datetime_format)
+        departure = (departure - datetime(departure.year, departure.month, departure.day)).seconds // 60
+        continuous['scheduled_departure_dt'] = departure
+        # set in air time of flight
+        continuous['scheduled_elapsed_time'] = get_minutes_timedelta(
+            Resources.airport_codes[self.inputs['origin_airport']],
+            Resources.airport_codes[self.inputs['destination_airport']],
+            datetime.strptime(self.params['origin_dt'], WeatherAPI.datetime_format),
+            datetime.strptime(self.params['destination_dt'], WeatherAPI.datetime_format)
+        )
+        self.inputs.update(continuous)
+        assert continuous.keys() == CONTINUOUS_INPUTS
 
     def _is_valid(self):
-        return self.inputs.keys() == self.input_names
+        return self.inputs.keys() == INPUT_NAMES
 
     def build(self):
         if self._is_valid():
             return self.inputs
-        raise IncompleteModelInputError(f'{self.inputs.keys() - self.input_names}'
+        raise IncompleteModelInputError(f'{self.inputs.keys() - INPUT_NAMES}'
                                         f'inputs are missing from ModelInputBuilder')
 
 
 class ResourcesAccess:
     @classmethod
     def preprocess_categorical(cls, key, value):
-        return Resources.preprocess_objects[key].transform(np.array(value).reshape(-1, 1))
+        try:
+            return Resources.preprocess_objects[key].transform(np.array(value).reshape(-1, 1))
+        except ValueError:
+            raise UnknownCategoryError(f'Error for key {key}', f'Could not find value {value}')
 
     @classmethod
     def preprocess_continuous(cls, keys_values):
@@ -67,6 +119,7 @@ class Resources:
     Get a mapping of preprocessing objects
     :return dictionary of keys being the filenames without extension and values the objects
     """
+
     @cached_classproperty
     def preprocess_objects(cls) -> dict:
         preprocess_objects = {}
@@ -80,6 +133,7 @@ class Resources:
     """
     Returns the pre-trained Keras model loaded from model.json and model.h5 files
     """
+
     @cached_classproperty
     def model(cls):
         # load json and create model
@@ -96,6 +150,7 @@ class Resources:
     Returns a mapping of the airport code to its geographical coordinates
     :return {'iata_code':{'lat':float, 'long':float}, ...}
     """
+
     @cached_classproperty
     def airport_codes(cls):
         df = pd.read_csv(cls.resources_path + '\\usa-airports.csv')

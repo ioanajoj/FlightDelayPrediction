@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import pandas as pd
-from django.utils import timezone
 from requests import Request
 
 from flight_delay_prediction.constant import TEMPERATURES, PRECIPITATION, WINDSPEED, VISIBILITY
@@ -23,17 +22,18 @@ class WeatherAPI:
     is a historical summary based on previous years
     :param lat: float
     :param long: float
-    :param forecast_datetime: string of format '%d/%m/%yT%H:%M'
+    :param forecast_datetime: string of format '%d/%m/%y %H:%M'
     :return: dictionary containing values for keys: temperature, visibility, precipitation, wind speed
     """
     @classmethod
-    def get_weather(cls, lat, long, forecast_datetime) -> dict:
-        current_datetime = timezone.now()
+    def get_weather(cls, lat, long, forecast_datetime, location) -> dict:
+        # use timezone.now()
+        current_datetime = datetime.now()
         forecast_datetime = datetime.strptime(forecast_datetime, cls.datetime_format)
         if cls._exceeds_15_days(current_datetime, forecast_datetime):
-            return cls._get_historical(lat, long, forecast_datetime)
+            return cls._get_historical(lat, long, forecast_datetime, location)
         else:
-            return cls._get_forecast(lat, long, forecast_datetime)
+            return cls._get_forecast(lat, long, forecast_datetime, location)
 
     """
     Return a historical summary of weather data for the given coordinates 
@@ -50,7 +50,7 @@ class WeatherAPI:
                   'key': WeatherAPI._api_key}
         request = Request('GET', cls._api_url + cls._history_summary_ep, params=params).prepare()
         df = pd.read_csv(request.url)
-        df = df[df['Period'] == cls.months[forecast_datetime.month]]
+        df = df[df['Period'] == cls.months[forecast_datetime.month - 1]]
         df = df[['Temperature', 'Wind Speed Mean',
                  'Precipitation Mean', 'Visibility',
                  'Minimum Temperature Mean', 'Maximum Temperature Mean']]
@@ -77,10 +77,10 @@ class WeatherAPI:
         df = df[df['Date time'] == forecast_datetime]
         # Visibility is apparently not available :(
         df = df[['Temperature', 'Precipitation', 'Wind Speed']]
-        return {'temperature': df['Temperature'].to_numpy()[0],
-                'precipitation': df['Precipitation'].to_numpy()[0],
-                'visibility': 9.5,
-                'wind_speed': df['Wind Speed'].to_numpy()[0]}
+        return {TEMPERATURES[location]: df['Temperature'].to_numpy()[0],
+                PRECIPITATION[location]: df['Precipitation'].to_numpy()[0],
+                VISIBILITY[location]: 9.5,
+                WINDSPEED[location]: df['Wind Speed'].to_numpy()[0]}
 
     """
     Checks if the difference between the two daytime objects is greater than 15 days

@@ -3,7 +3,7 @@ class NoPreprocessObjectError:
         self.msg = msg
 
     def __str__(self):
-        return f'Error: {self.msg}'
+        return f'NoPreprocessObjectError: {self.msg}'
 
 
 class IncompleteModelInputError:
@@ -11,4 +11,10 @@ class IncompleteModelInputError:
         self.msg = msg
 
     def __str__(self):
-        return f'Error: {self.msg}'
+        return f'IncompleteModelInputError: {self.msg}'
+
+
+class UnknownCategoryError(Exception):
+    def __init__(self, message, errors):
+        super(UnknownCategoryError, self).__init__(message)
+        self.errors = errors
