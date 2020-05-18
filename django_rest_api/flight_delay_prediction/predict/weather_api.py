@@ -55,7 +55,8 @@ class WeatherAPI:
                  'Precipitation Mean', 'Visibility',
                  'Minimum Temperature Mean', 'Maximum Temperature Mean']]
         return {TEMPERATURES[location]: df['Temperature'].to_numpy()[0],
-                PRECIPITATION[location]: df['Precipitation Mean'].to_numpy()[0],
+                # PRECIPITATION[location]: df['Precipitation Mean'].to_numpy()[0],
+                PRECIPITATION[location]: 0,
                 VISIBILITY[location]: df['Visibility'].to_numpy()[0],
                 WINDSPEED[location]: df['Wind Speed Mean'].to_numpy()[0]}
 

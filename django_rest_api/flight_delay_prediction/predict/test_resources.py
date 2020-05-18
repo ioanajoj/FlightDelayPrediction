@@ -53,9 +53,9 @@ def test_load_model():
           'precipitation_x': 0, 'precipitation_y': 0.17,
           'visibility_x': 10, 'visibility_y': 4.5,
           'wind_speed_x': 15, 'wind_speed_y': 6,
-          'carrier_code': 'AA', 'day': 31,
+          'carrier_code': 'AA', 'day': '31',
           'origin_airport': 'JFK', 'destination_airport': 'LAX',
-          'month': '10', 'weekday': '3'})
+          'month': '12', 'weekday': '3'})
     ]
 )
 def test_model(keys_values):
