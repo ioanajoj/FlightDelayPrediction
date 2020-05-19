@@ -32,7 +32,10 @@ stations_endpoint = '/stations'
 # get number of stations available
 start_date = '2019-12-01'
 usa_extent = '15.82,-166.5,70.0,-62.0'
-response = requests.get(base_url + stations_endpoint, params={'startdate': start_date, 'extent': usa_extent}, headers=header)
+response = requests.get(base_url + stations_endpoint, 
+                        params={'startdate': start_date, 
+                                'extent': usa_extent}, 
+                        headers=header)
 station_count = response.json()['metadata']['resultset']['count']
 
 # get stations

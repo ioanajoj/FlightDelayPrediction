@@ -21,6 +21,7 @@ import os
 source_url = 'https://www.ncei.noaa.gov/data/local-climatological-data/access/'
 year = '2019'
 
+
 def download_csv(id, filename, year, air_df):
     """
     weather_data_cleanup.ipynb code
@@ -39,19 +40,19 @@ def download_csv(id, filename, year, air_df):
     # keep only REPORT_TYPE FM-15 = METAR Aviation routine weather report => hourly report for whole month
     df = df[df.REPORT_TYPE == 'FM-15']
     df = df.drop(columns=['REPORT_TYPE'])
+
     def clean_up(df, column_name):
-        if df[column_name].isnull().all:
+        if df[column_name].isnull().all():
             df[column_name].fillna(0)
         else:
             # some rows contain numeric values followed by letters, while some are null
             # convert everything to string => 54 = '54', '72s' = '72s', nan = 'nan'
             df[column_name] = df[column_name].astype(str)
             # Remove all letters => 54 = '54', '72s' = '72', nan = ''
-            df[column_name] = df[column_name].replace('[A-Za-z]+','', regex=True)
+            df[column_name] = df[column_name].str.replace(r'[^0-9\.]', '')
+            df[column_name] = df[column_name].str.replace(r'([0-9]+\.[0-9]+).*', r'\1')
             # Change '' back to valid nan: np.nan
             df[column_name] = df[column_name].str.replace('^$', lambda _: np.nan)
-            # Replace * with np.nan
-            df[column_name] = df[column_name].str.replace('\*', lambda _: np.nan)
             # Convert back to numeric all numeric values, nan remains none
             df[column_name] = pd.to_numeric(df[column_name])
             # Fill left nan with average values
@@ -63,6 +64,7 @@ def download_csv(id, filename, year, air_df):
             df[column_name] = pd.to_numeric(df[column_name])
             df[column_name] = df[column_name].round(2)
         return df[column_name]
+
     df.HourlyDryBulbTemperature = clean_up(df, 'HourlyDryBulbTemperature')
     df.HourlyPrecipitation = clean_up(df, 'HourlyPrecipitation')
     df.HourlyStationPressure = clean_up(df, 'HourlyStationPressure')
@@ -71,7 +73,7 @@ def download_csv(id, filename, year, air_df):
     # get iata_code
     iata_code = air_df[air_df['station_id'] == 'WBAN:' + str(short_id)].iloc[0]['iata_code']
     df['iata_code'] = iata_code
-    df.to_csv(os.path.join('weather-data-2', iata_code + '.csv'), index=False)
+    df.to_csv(os.path.join('weather-data-4', iata_code + '.csv'), index=False)
 
 
 def retrieve_files():
@@ -83,7 +85,6 @@ def retrieve_files():
         if call[-4:] == '.csv':
             file_names[call[6:-4]] = call
     return file_names
-
 
 
 if __name__ == '__main__':
@@ -100,4 +101,3 @@ if __name__ == '__main__':
                 print(f'Exception occurred for {short_id}, data for this station is not available for the given year')
             except Exception as e:
                 print(f'Exception occurred for {short_id} {e}')
-
