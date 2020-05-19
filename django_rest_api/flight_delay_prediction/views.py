@@ -26,4 +26,12 @@ def index(request):
         print(prediction)
     except Exception as ex:
         print(ex)
-    return HttpResponse(f"Hello, world. You're at the index. {prediction[0]}")
+        return HttpResponse("Unfortunately something went wrong :)")
+    return HttpResponse(f"{round(1 - prediction[0,0], 2)}")
+
+# def predict(carrier_code, origin_airport, destination_airport, origin_dt, destination_dt):
+#     payload = {'carrier_code': carrier_code,
+#                'origin_airport': origin_airport, 'destination_airport': destination_airport,
+#                'origin_dt': origin_dt, 'destination_dt': destination_dt}
+#     import requests
+#     return requests.get('http://127.0.0.1:8000/predict', params=payload).content

@@ -3,7 +3,7 @@ import pytest
 
 from flight_delay_prediction.models import WeatherForecast
 from flight_delay_prediction.utils import day_difference
-from flight_delay_prediction.predict.weather_api import WeatherAPI
+from flight_delay_prediction.weather.weather_api import WeatherAPI
 
 
 @pytest.mark.parametrize(
@@ -110,18 +110,18 @@ def test_exceeds_15_days(dt1, dt2):
 #     assert weather.keys() == {'temperature_' + location, 'precipitation_' + location,
 #                               'visibility_' + location, 'wind_speed_' + location}
 
-
+@pytest.mark.django_db
 @pytest.mark.parametrize(
     "iata_code,dt,location",
     [
         (
                 'JFK',
-                datetime.strptime('17/05/20 11:57', WeatherAPI.datetime_format),
+                '20/5/20 11:57',
                 'x'
         ),
         (
-                'CDA',
-                datetime.strptime('17/05/20 11:57', WeatherAPI.datetime_format),
+                'DCA',
+                '20/6/20 11:57',
                 'y'
         )
     ]
@@ -130,6 +130,7 @@ def test_get_forecast(iata_code, dt, location):
     weather = WeatherAPI.get_weather(iata_code, dt, location)
     assert weather.keys() == {'temperature_' + location, 'precipitation_' + location,
                               'visibility_' + location, 'wind_speed_' + location}
+    dt = datetime.strptime(dt, WeatherAPI.datetime_format)
     query = WeatherForecast.objects.filter(iata_code=iata_code, dt=dt.replace(minute=0))
     print(query)
 

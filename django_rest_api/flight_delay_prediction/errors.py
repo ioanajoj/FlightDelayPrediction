@@ -18,3 +18,7 @@ class UnknownCategoryError(Exception):
     def __init__(self, message, errors):
         super(UnknownCategoryError, self).__init__(message)
         self.errors = errors
+
+
+class RequestsExceeded(Exception):
+    pass

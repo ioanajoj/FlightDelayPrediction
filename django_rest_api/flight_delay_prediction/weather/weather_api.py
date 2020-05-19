@@ -5,9 +5,17 @@ import pandas as pd
 from requests import Request
 
 from flight_delay_prediction.constant import TEMPERATURES, PRECIPITATION, WINDSPEED, VISIBILITY
+from flight_delay_prediction.errors import RequestsExceeded
 from flight_delay_prediction.models import WeatherSummary, WeatherForecast
-from flight_delay_prediction.predict import Resources
+from flight_delay_prediction.resources_loader import Resources
 from flight_delay_prediction.utils import day_difference
+
+
+class WeatherResponse:
+    def __init__(self, location, temperature=59, precipitation=0, visibility=9, wind_speed=1):
+        self.location = location
+        self.response = {TEMPERATURES[location]: temperature, PRECIPITATION[location]: precipitation,
+                         VISIBILITY[location]: visibility, WINDSPEED[location]: wind_speed}
 
 
 class WeatherAPI:
@@ -32,29 +40,30 @@ class WeatherAPI:
         :param location: AIRPORT['origin'] or AIRPORT['destination']
         :return: dictionary containing values for keys: temperature, visibility, precipitation, wind speed
         """
-        # use timezone.now()
-        coords = Resources.airport_codes[iata_code]
-        lat, long = coords['lat'], coords['long']
+        lat, long = Resources.airport_codes[iata_code].values()
         current_datetime = datetime.now()
         forecast_datetime = datetime.strptime(forecast_datetime, cls.datetime_format)
         if day_difference(current_datetime, forecast_datetime) >= 15:
             df = cls._get_historical(lat, long)
             cls._save_summary(iata_code, df)
             df = df[df['Period'] == cls.months[forecast_datetime.month - 1]]
-            return {TEMPERATURES[location]: df['Temperature'].to_numpy()[0],
-                    # PRECIPITATION[location]: df['Precipitation Mean'].to_numpy()[0],
-                    PRECIPITATION[location]: 0,
-                    VISIBILITY[location]: df['Visibility'].to_numpy()[0],
-                    WINDSPEED[location]: df['Wind Speed Mean'].to_numpy()[0]}
+            return WeatherResponse(
+                location,
+                temperature=df['Temperature'].to_numpy()[0],
+                visibility=df['Visibility'].to_numpy()[0],
+                wind_speed=df['Wind Speed'].to_numpy()[0]
+            ).response
         else:
             df = cls._get_forecast(lat, long)
             cls._save_forecast(iata_code, df)
             forecast_datetime = forecast_datetime.replace(minute=0)
             df = df[df['Date time'] == forecast_datetime]
-            return {TEMPERATURES[location]: df['Temperature'].to_numpy()[0],
-                    PRECIPITATION[location]: df['Precipitation'].to_numpy()[0],
-                    VISIBILITY[location]: 9.5,
-                    WINDSPEED[location]: df['Wind Speed'].to_numpy()[0]}
+            return WeatherResponse(
+                location,
+                temperature=df['Temperature'].to_numpy()[0],
+                precipitation=df['Precipitation'].to_numpy()[0],
+                wind_speed=df['Wind Speed'].to_numpy()[0]
+            ).response
 
     @classmethod
     def _get_historical(cls, lat, long) -> dict:
@@ -71,6 +80,8 @@ class WeatherAPI:
                   'key': WeatherAPI._api_key}
         request = Request('GET', cls._api_url + cls._history_summary_ep, params=params).prepare()
         df = pd.read_csv(request.url)
+        if df.shape[0] == 0:
+            raise RequestsExceeded()
         return df
 
     @classmethod
@@ -86,32 +97,43 @@ class WeatherAPI:
                   'contentType': 'csv', 'key': cls._api_key}
         request = Request('GET', cls._api_url + cls._forecast_ep, params=params).prepare()
         df = pd.read_csv(request.url)
+        if df.shape[0] == 0:
+            raise RequestsExceeded()
         df['Date time'] = pd.to_datetime(df['Date time'])
         return df
 
     @classmethod
     def _save_summary(cls, iata_code, df):
+        df = df[['Temperature', 'Precipitation', 'Visibility', 'Wind Speed Mean']]
+        df = df.dropna()
         temperature = df['Temperature']
         precipitation = df['Precipitation']
         visibility = df['Visibility']
         wind_speed = df['Wind Speed Mean']
         for index, month in enumerate(cls.months):
-            summary = WeatherSummary(iata_code=iata_code, month=month,
-                                     temperature=temperature[index],
-                                     precipitation=precipitation[index],
-                                     visibility=visibility[index],
-                                     wind_speed=wind_speed[index])
-            summary.save()
+            WeatherSummary.objects.create(
+                iata_code=iata_code, month=index,
+                temperature=temperature[index],
+                precipitation=precipitation[index],
+                visibility=visibility[index],
+                wind_speed=wind_speed[index]
+            )
             cls.logger.info(f'Saved summary for {iata_code} in {month}')
 
     @classmethod
     def _save_forecast(cls, iata_code, df):
-        for index in df.shape[0]:
+        df = df[['Date time', 'Temperature', 'Precipitation', 'Wind Speed']]
+        df = df.dropna()
+        temperature = df['Temperature']
+        precipitation = df['Precipitation']
+        wind_speed = df['Wind Speed Mean']
+        for index in range(df.shape[0]):
             dt = df['Date time'][index]
-            forecast = WeatherForecast(iata_code=iata_code, dt=df['Date time'][index],
-                                       temperature=df['Temperature'][index],
-                                       precipitation=df['Precipitation'][index],
-                                       visibility=9,
-                                       wind_speed=df['Wind Speed Mean'][index])
-            forecast.save()
-            cls.logger.info(f'Saved forecast {iata_code} in {dt}')
+            WeatherForecast.objects.create(
+                iata_code=iata_code, dt=df['Date time'][index],
+                temperature=temperature[index],
+                precipitation=precipitation[index],
+                visibility=9,
+                wind_speed=wind_speed[index]
+            )
+            cls.logger.info(f'Saved forecast for {iata_code} in {dt}')
