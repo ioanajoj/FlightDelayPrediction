@@ -6,7 +6,7 @@ from requests import Request
 
 from flight_delay_prediction.constant import TEMPERATURES, PRECIPITATION, WINDSPEED, VISIBILITY
 from flight_delay_prediction.models import WeatherSummary, WeatherForecast
-from flight_delay_prediction.predict.input_builder import Resources
+from flight_delay_prediction.predict import Resources
 from flight_delay_prediction.utils import day_difference
 
 
@@ -19,20 +19,19 @@ class WeatherAPI:
     _forecast_ep = '/forecast'
     logger = logging.getLogger(__name__)
 
-    """
-    Return data about weather
-    • If forecast_datetime is within 15 days from current datetime, then the weather retrieved
-    will be a real forecast
-    • If forecast_datetime is anytime later than 15 days from current_datetime, then the weather data
-    is a historical summary based on previous years
-    :param lat: float
-    :param long: float
-    :param forecast_datetime: string of format '%d/%m/%y %H:%M'
-    :return: dictionary containing values for keys: temperature, visibility, precipitation, wind speed
-    """
-
     @classmethod
     def get_weather(cls, iata_code, forecast_datetime, location) -> dict:
+        """
+        Return data about weather
+        • If forecast_datetime is within 15 days from current datetime, then the weather retrieved
+        will be a real forecast
+        • If forecast_datetime is anytime later than 15 days from current_datetime, then the weather data
+        is a historical summary based on previous years
+        :param iata_code: three letter string
+        :param forecast_datetime: string of format '%d/%m/%y %H:%M'
+        :param location: AIRPORT['origin'] or AIRPORT['destination']
+        :return: dictionary containing values for keys: temperature, visibility, precipitation, wind speed
+        """
         # use timezone.now()
         coords = Resources.airport_codes[iata_code]
         lat, long = coords['lat'], coords['long']
@@ -116,4 +115,3 @@ class WeatherAPI:
                                        wind_speed=df['Wind Speed Mean'][index])
             forecast.save()
             cls.logger.info(f'Saved forecast {iata_code} in {dt}')
-

@@ -1,17 +1,12 @@
-import pickle
-import glob
 from datetime import datetime
 
-import numpy as np
-import pandas as pd
-import tensorflow.keras.models as models
-
 from flight_delay_prediction.constant import CATEGORICAL_INPUTS, CONTINUOUS_INPUTS, AIRPORTS, INPUT_NAMES, TEMPERATURES, \
-    PRECIPITATION, VISIBILITY, WINDSPEED
-from flight_delay_prediction.predict.errors import *
-from flight_delay_prediction.predict.weather_api import WeatherAPI
-from flight_delay_prediction.utils import cached_classproperty
+    PRECIPITATION, VISIBILITY, WINDSPEED, DATETIME_FORMAT
+from flight_delay_prediction.errors import *
+from flight_delay_prediction.resources_loader import Resources
+from flight_delay_prediction.weather.weather_api import WeatherAPI
 from flight_delay_prediction.utils import get_minutes_timedelta
+from flight_delay_prediction.weather.weather_caching import WeatherPool
 
 
 class ModelInputBuilder:
@@ -32,13 +27,13 @@ class ModelInputBuilder:
 
     def get_weather(self):
         weather = {}
-        weather_origin = self._access_weather(self.params['origin_airport'],
-                                              self.params['origin_dt'],
-                                              AIRPORTS['origin'])
+        weather_origin = self._access_weather_2(self.params['origin_airport'],
+                                                self.params['origin_dt'],
+                                                AIRPORTS['origin'])
         weather.update(weather_origin)
-        weather_destination = self._access_weather(self.params['destination_airport'],
-                                                   self.params['destination_dt'],
-                                                   AIRPORTS['destination'])
+        weather_destination = self._access_weather_2(self.params['destination_airport'],
+                                                     self.params['destination_dt'],
+                                                     AIRPORTS['destination'])
         weather.update(weather_destination)
         return weather
 
@@ -47,7 +42,14 @@ class ModelInputBuilder:
         if self.mock_weather:
             return {TEMPERATURES[location]: 67, PRECIPITATION[location]: 0,
                     VISIBILITY[location]: 9, WINDSPEED[location]: 16}
-        weather = WeatherAPI.get_weather(coords['lat'], coords['long'], dt, location)
+        weather = WeatherAPI.get_weather(iata_code, dt, location)
+        return weather
+
+    def _access_weather_2(self, iata_code, dt, location):
+        if self.mock_weather:
+            return {TEMPERATURES[location]: 67, PRECIPITATION[location]: 0,
+                    VISIBILITY[location]: 9, WINDSPEED[location]: 16}
+        weather = WeatherPool.get_weather(iata_code, dt, location)
         return weather
 
     def set_categorical(self):
@@ -56,7 +58,8 @@ class ModelInputBuilder:
                        'destination_airport': self.params['destination_airport'],
                        'day': str(datetime.strptime(self.params['origin_dt'], WeatherAPI.datetime_format).day),
                        'month': str(datetime.strptime(self.params['origin_dt'], WeatherAPI.datetime_format).month),
-                       'weekday': str(datetime.strptime(self.params['origin_dt'], WeatherAPI.datetime_format).weekday())}
+                       'weekday': str(
+                           datetime.strptime(self.params['origin_dt'], WeatherAPI.datetime_format).weekday())}
         self.inputs.update(categorical)
         assert categorical.keys() == set(CATEGORICAL_INPUTS)
 
@@ -84,80 +87,3 @@ class ModelInputBuilder:
             return self.inputs
         raise IncompleteModelInputError(f'{self.inputs.keys() - INPUT_NAMES}'
                                         f'inputs are missing from ModelInputBuilder')
-
-
-class ResourcesAccess:
-    @classmethod
-    def preprocess_categorical(cls, key, value):
-        try:
-            return Resources.preprocess_objects[key].transform(np.array(value).reshape(-1, 1))
-        except ValueError:
-            raise UnknownCategoryError(f'Error for key {key}', f'Could not find value {value}')
-
-    @classmethod
-    def preprocess_continuous(cls, keys_values):
-        data = np.zeros(len(CONTINUOUS_INPUTS))
-        for i, keys in enumerate(CONTINUOUS_INPUTS):
-            data[i] = keys_values[keys]
-        return Resources.preprocess_objects['transformer'].transform(data.reshape(1, -1))
-
-    @classmethod
-    def predict(cls, keys_values):
-        # prepare categorical inputs
-        categorical = []
-        for key in CATEGORICAL_INPUTS:
-            print(key)
-            categorical.append(cls.preprocess_categorical(key, keys_values[key])[0])
-        # prepare continuous inputs
-        cont = cls.preprocess_continuous(keys_values)
-        model_input = categorical + [cont]
-        return Resources.model.predict(model_input)
-
-
-class Resources:
-    # resources_path = f'{settings.BASE_DIR}\\resources'
-    resources_path = 'E:\\UBB\\Licenta\\django_rest_api\\resources'
-    preprocess_path = f'{resources_path}\\preprocessing\\'
-    model_path = f'{resources_path}\\keras_model'
-
-    """
-    Get a mapping of preprocessing objects
-    :return dictionary of keys being the filenames without extension and values the objects
-    """
-    @cached_classproperty
-    def preprocess_objects(cls) -> dict:
-        preprocess_objects = {}
-        for file_path in glob.glob(cls.preprocess_path + '*.pkl'):
-            file_name = file_path.split('\\')[-1].split('.')[0]
-            obj = pickle.load(open(file_path, 'rb'))
-            preprocess_objects[file_name] = obj
-        print('Loaded preprocessing objects')
-        return preprocess_objects
-
-    """
-    Returns the pre-trained Keras model loaded from model.json and model.h5 files
-    """
-    @cached_classproperty
-    def model(cls):
-        # load json and create model
-        json_file = open(cls.model_path + '\\model.json', 'r')
-        loaded_model_json = json_file.read()
-        json_file.close()
-        loaded_model = models.model_from_json(loaded_model_json)
-        # load weights into new model
-        loaded_model.load_weights(cls.model_path + "\\model.h5")
-        print("Loaded model from disk")
-        return loaded_model
-
-    """
-    Returns a mapping of the airport code to its geographical coordinates
-    :return {'iata_code':{'lat':float, 'long':float}, ...}
-    """
-    @cached_classproperty
-    def airport_codes(cls):
-        df = pd.read_csv(cls.resources_path + '\\usa-airports.csv')
-        df = df[['iata_code', 'latitude_deg', 'longitude_deg']]
-        df = df.rename(columns={'latitude_deg': 'lat', 'longitude_deg': 'long'})
-        df = df.round(3)
-        df = df.set_index('iata_code')
-        return df.to_dict('iata_code')

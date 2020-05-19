@@ -2,7 +2,7 @@ from datetime import datetime
 
 import pytest
 
-from flight_delay_prediction.predict.weather_api import WeatherAPI
+from flight_delay_prediction.weather.weather_api import WeatherAPI
 from flight_delay_prediction.utils import get_minutes_timedelta
 
 

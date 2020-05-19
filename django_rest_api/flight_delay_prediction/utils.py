@@ -28,6 +28,15 @@ class cached_classproperty(cached_property):
 
 
 def get_minutes_timedelta(coords_1, coords_2, dt_1, dt_2):
+    """
+    Get duration of a flight departing at coords_1 and arriving at coords_2
+    at the given datetimes in different timezones
+    :param coords_1: {'lat':x, 'long':y}
+    :param coords_2: {'lat':x, 'long':y}
+    :param dt_1: datetime
+    :param dt_2: datetime
+    :return:
+    """
     tf = TimezoneFinder()
     tmz_1 = pytz.timezone(tf.timezone_at(lat=coords_1['lat'], lng=coords_1['long'])).utcoffset(datetime.now())
     tmz_2 = pytz.timezone(tf.timezone_at(lat=coords_2['lat'], lng=coords_2['long'])).utcoffset(datetime.now())
@@ -43,5 +52,13 @@ def get_minutes_timedelta(coords_1, coords_2, dt_1, dt_2):
     return timezone_diff + dt_diff
 
 
-
-
+def day_difference(daytime1, daytime2) -> bool:
+    """
+    Checks if the difference between the two daytime objects is greater than 15 days
+    :param daytime1: datetime
+    :param daytime2: datetime
+    :return: boolean
+    """
+    if daytime1 > daytime2:
+        daytime1, daytime2 = daytime2, daytime1
+    return (daytime2 - daytime1).days

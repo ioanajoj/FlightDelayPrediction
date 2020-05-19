@@ -2,10 +2,13 @@ from django.http import HttpResponse
 from django.shortcuts import render
 
 from flight_delay_prediction.constant import INPUT_NAMES
-from flight_delay_prediction.predict.input_builder import ModelInputBuilder, ResourcesAccess
+from flight_delay_prediction.predict.input_builder import ModelInputBuilder
 
 
 # Create your views here.
+from flight_delay_prediction.resources_loader import ResourcesAccess
+
+
 def index(request):
     """
     example: payload = {'carrier_code':'DL','origin_airport':'JFK','destination_airport':'LAX',

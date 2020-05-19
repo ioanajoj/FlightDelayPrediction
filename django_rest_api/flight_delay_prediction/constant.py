@@ -10,3 +10,4 @@ CONTINUOUS_INPUTS = ['scheduled_elapsed_time', 'scheduled_departure_dt',
 INPUT_NAMES = {'carrier_code', 'origin_airport', 'destination_airport', 'day', 'month', 'weekday',
                'scheduled_departure_dt', 'scheduled_elapsed_time',
                'temperature', 'precipitation', 'visibility', 'wind_speed'}
+DATETIME_FORMAT = '%d/%m/%y %H:%M'

@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from flight_delay_prediction.predict.input_builder import Resources, ResourcesAccess
+from flight_delay_prediction.resources_loader import ResourcesAccess, Resources
 
 
 @pytest.mark.parametrize(
@@ -48,14 +48,26 @@ def test_load_model():
 @pytest.mark.parametrize(
     "keys_values",
     [
-        ({'scheduled_elapsed_time': 60, 'scheduled_departure_dt': 480,
-          'temperature_x': 16, 'temperature_y': 18,
-          'precipitation_x': 0, 'precipitation_y': 0.17,
-          'visibility_x': 10, 'visibility_y': 4.5,
-          'wind_speed_x': 15, 'wind_speed_y': 6,
-          'carrier_code': 'AA', 'day': '31',
-          'origin_airport': 'JFK', 'destination_airport': 'LAX',
-          'month': '12', 'weekday': '3'})
+        (
+                {'scheduled_elapsed_time': 60, 'scheduled_departure_dt': 480,
+                 'temperature_x': 16, 'temperature_y': 18,
+                 'precipitation_x': 0, 'precipitation_y': 0.17,
+                 'visibility_x': 10, 'visibility_y': 4.5,
+                 'wind_speed_x': 15, 'wind_speed_y': 6,
+                 'carrier_code': 'AA', 'day': '31',
+                 'origin_airport': 'JFK', 'destination_airport': 'LAX',
+                 'month': '12', 'weekday': '3'}
+        ),
+        (
+                {'scheduled_elapsed_time': 172, 'scheduled_departure_dt': 420,
+                 'temperature_x': 63, 'temperature_y': 51,
+                 'precipitation_x': 0.5, 'precipitation_y': 0.17,
+                 'visibility_x': 8.5, 'visibility_y': 8,
+                 'wind_speed_x': 2, 'wind_speed_y': 3,
+                 'carrier_code': 'DL', 'day': '20',
+                 'origin_airport': 'LAX', 'destination_airport': 'SEA',
+                 'month': '5', 'weekday': '2'}
+        )
     ]
 )
 def test_model(keys_values):
