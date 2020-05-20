@@ -22,3 +22,7 @@ class UnknownCategoryError(Exception):
 
 class RequestsExceeded(Exception):
     pass
+
+
+class WrongRequestParameters(Exception):
+    pass

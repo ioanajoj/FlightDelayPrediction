@@ -5,6 +5,8 @@ Singleton NNModel
 
 STEPS
 • load airport_code : coords file
+• when requesting data from db, check if data is older than 1 day, if so, request from API again
+• status for errors
 
 WeatherAPI
 ? get current time from datetime.current? or receive it from the request

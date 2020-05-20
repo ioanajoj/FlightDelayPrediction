@@ -33,7 +33,7 @@ class WeatherPool:
             return {TEMPERATURES[location]: result.temperature,
                     PRECIPITATION[location]: 0,
                     VISIBILITY[location]: result.visibility,
-                    WINDSPEED[location]: 10}
+                    WINDSPEED[location]: result.wind_speed}
         return None
 
     @classmethod

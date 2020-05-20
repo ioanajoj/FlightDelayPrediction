@@ -30,7 +30,6 @@ class ResourcesAccess:
         # prepare categorical inputs
         categorical = []
         for key in CATEGORICAL_INPUTS:
-            print(key)
             categorical.append(cls.preprocess_categorical(key, keys_values[key])[0])
         # prepare continuous inputs
         cont = cls.preprocess_continuous(keys_values)
@@ -55,7 +54,7 @@ class Resources:
             file_name = file_path.split('\\')[-1].split('.')[0]
             obj = pickle.load(open(file_path, 'rb'))
             preprocess_objects[file_name] = obj
-        print('Loaded preprocessing objects')
+        print('log: Loaded preprocessing objects from file')
         return preprocess_objects
 
     """
@@ -70,7 +69,7 @@ class Resources:
         loaded_model = models.model_from_json(loaded_model_json)
         # load weights into new model
         loaded_model.load_weights(cls.model_path + "\\model.h5")
-        print("Loaded model from disk")
+        print('log: Loaded model from file')
         return loaded_model
 
     """
@@ -85,4 +84,5 @@ class Resources:
         df = df.rename(columns={'latitude_deg': 'lat', 'longitude_deg': 'long'})
         df = df.round(3)
         df = df.set_index('iata_code')
+        print('log: Loaded airport codes from file')
         return df.to_dict('iata_code')

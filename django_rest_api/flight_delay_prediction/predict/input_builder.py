@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from flight_delay_prediction.constant import CATEGORICAL_INPUTS, CONTINUOUS_INPUTS, AIRPORTS, INPUT_NAMES, TEMPERATURES, \
-    PRECIPITATION, VISIBILITY, WINDSPEED, DATETIME_FORMAT
+    PRECIPITATION, VISIBILITY, WINDSPEED
 from flight_delay_prediction.errors import *
 from flight_delay_prediction.resources_loader import Resources
 from flight_delay_prediction.weather.weather_api import WeatherAPI
@@ -16,9 +16,10 @@ class ModelInputBuilder:
     """
 
     def __init__(self, params, mock_weather=False):
-        assert params.keys() == {'carrier_code',
+        if not params.keys() == {'carrier_code',
                                  'origin_airport', 'destination_airport',
-                                 'origin_dt', 'destination_dt'}
+                                 'origin_dt', 'destination_dt'}:
+            raise WrongRequestParameters()
         self.inputs = {}
         self.params = params
         self.mock_weather = mock_weather
@@ -27,25 +28,17 @@ class ModelInputBuilder:
 
     def get_weather(self):
         weather = {}
-        weather_origin = self._access_weather_2(self.params['origin_airport'],
+        weather_origin = self._access_weather(self.params['origin_airport'],
                                                 self.params['origin_dt'],
                                                 AIRPORTS['origin'])
         weather.update(weather_origin)
-        weather_destination = self._access_weather_2(self.params['destination_airport'],
+        weather_destination = self._access_weather(self.params['destination_airport'],
                                                      self.params['destination_dt'],
                                                      AIRPORTS['destination'])
         weather.update(weather_destination)
         return weather
 
     def _access_weather(self, iata_code, dt, location):
-        coords = Resources.airport_codes[iata_code]
-        if self.mock_weather:
-            return {TEMPERATURES[location]: 67, PRECIPITATION[location]: 0,
-                    VISIBILITY[location]: 9, WINDSPEED[location]: 16}
-        weather = WeatherAPI.get_weather(iata_code, dt, location)
-        return weather
-
-    def _access_weather_2(self, iata_code, dt, location):
         if self.mock_weather:
             return {TEMPERATURES[location]: 67, PRECIPITATION[location]: 0,
                     VISIBILITY[location]: 9, WINDSPEED[location]: 16}

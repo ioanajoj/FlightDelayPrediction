@@ -1,5 +1,4 @@
 from datetime import datetime
-import logging
 
 import pandas as pd
 from requests import Request
@@ -25,7 +24,6 @@ class WeatherAPI:
     _api_url = 'https://weather.visualcrossing.com/VisualCrossingWebServices/rest/services/weatherdata'
     _history_summary_ep = '/historysummary'
     _forecast_ep = '/forecast'
-    logger = logging.getLogger(__name__)
 
     @classmethod
     def get_weather(cls, iata_code, forecast_datetime, location) -> dict:
@@ -106,6 +104,7 @@ class WeatherAPI:
     def _save_summary(cls, iata_code, df):
         df = df[['Temperature', 'Precipitation', 'Visibility', 'Wind Speed Mean']]
         df = df.dropna()
+        df = df.reset_index()
         temperature = df['Temperature']
         precipitation = df['Precipitation']
         visibility = df['Visibility']
@@ -118,15 +117,16 @@ class WeatherAPI:
                 visibility=visibility[index],
                 wind_speed=wind_speed[index]
             )
-            cls.logger.info(f'Saved summary for {iata_code} in {month}')
+            print(f'log: Saved summary for {iata_code} in {month}')
 
     @classmethod
     def _save_forecast(cls, iata_code, df):
         df = df[['Date time', 'Temperature', 'Precipitation', 'Wind Speed']]
         df = df.dropna()
+        df = df.reset_index()
         temperature = df['Temperature']
         precipitation = df['Precipitation']
-        wind_speed = df['Wind Speed Mean']
+        wind_speed = df['Wind Speed']
         for index in range(df.shape[0]):
             dt = df['Date time'][index]
             WeatherForecast.objects.create(
@@ -136,4 +136,4 @@ class WeatherAPI:
                 visibility=9,
                 wind_speed=wind_speed[index]
             )
-            cls.logger.info(f'Saved forecast for {iata_code} in {dt}')
+            print(f'log: Saved forecast for {iata_code} in {dt}')

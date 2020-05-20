@@ -23,7 +23,7 @@ def index(request):
     prediction = None
     try:
         prediction = ResourcesAccess.predict(inputs.inputs)
-        print(prediction)
+        print(prediction[0, 0])
     except Exception as ex:
         print(ex)
         return HttpResponse("Unfortunately something went wrong :)")

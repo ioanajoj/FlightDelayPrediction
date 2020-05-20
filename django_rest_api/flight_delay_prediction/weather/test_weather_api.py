@@ -132,7 +132,6 @@ def test_get_forecast(iata_code, dt, location):
                               'visibility_' + location, 'wind_speed_' + location}
     dt = datetime.strptime(dt, WeatherAPI.datetime_format)
     query = WeatherForecast.objects.filter(iata_code=iata_code, dt=dt.replace(minute=0))
-    print(query)
 
 
 if __name__ == '__main__':
