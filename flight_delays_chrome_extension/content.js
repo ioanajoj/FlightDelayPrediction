@@ -11,6 +11,11 @@ let carriers = {
     "Southwest Airlines": "WN"
 }
 
+
+function handle_response(result) {
+    console.log(result);
+}
+
 class Flight {
     constructor(index, selector, dates, route_origin_airport, route_destination_airport) {
         this.index = index;
@@ -59,6 +64,16 @@ class Flight {
         return params;
     }
 
+    on_get_response = function(response, sender, sendResponse) {
+        console.log("from content: " + response);
+        var some_span = document.createElement('span');
+        some_span.innerHTML = "This flight has " + Math.round(parseFloat(response) * 100) + "% chances to be delayed.";
+        some_span.setAttribute("class", "tooltiptext");
+
+        let tooltip = $(this.selector).attr("class", "cool_tooltip");
+        $(tooltip).append(some_span);
+    }
+
     request_delay() {
         var params = this.get_params();
         if (params["carrier_code"]) {
@@ -67,19 +82,9 @@ class Flight {
             let url = 'http://127.0.0.1:8000/predict/?' + params; 
             chrome.runtime.sendMessage(
                 url,
-                this.handle_response
+                this.on_get_response.bind(this)
           );
-
-            // fetch('http://127.0.0.1:8000/predict/?' + params)
-            // .then(r => console.log(r))
-            // .then(result => {
-            //     console.log("Result: " + result);
-            // })
         }
-    }
-
-    handle_response(response) {
-        console.log(response);
     }
 }
 
