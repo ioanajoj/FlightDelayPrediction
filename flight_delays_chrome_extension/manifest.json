@@ -4,7 +4,7 @@
     "manifest_version": 2,
     "content_scripts": [
         {
-            "js": [ "jquery-3.5.1.min.js", "content.js" ],
+            "js": [ "jquery-3.5.1.min.js", "moment.js", "content.js" ],
             "matches": ["https://www.skyscanner.com/transport/*"]
         }
     ],
@@ -14,5 +14,9 @@
     },
     "permissions": [
         "tabs", "activeTab", "http://127.0.0.1:8000/*"
-    ]
+    ],
+    "background": {
+        "scripts": ["background.js"],
+        "persistent": false
+    }
 }

@@ -1,3 +1,5 @@
+
+
 class Flight {
     constructor(index, text) {
         this.index = index;

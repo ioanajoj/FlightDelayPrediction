@@ -1,30 +1,85 @@
+let carriers = {
+    "American Airlines": "AA",
+    "Alaska Airlines": "AS",
+    "jetBlue": "B6",
+    "Delta": "DL",
+    "Frontier Airlines": "F9",
+    "Allegiant Air": "G4",
+    "Hawaiian Airlines": "HA",
+    "Spirit Airlines": "NK",
+    "United": "UA",
+    "Southwest Airlines": "WN"
+}
+
 class Flight {
     constructor(index, selector, dates, route_origin_airport, route_destination_airport) {
         this.index = index;
         this.selector = selector;
         this.text = $(selector).text().split(/\b\s+/);
         this.origin_airport = this.text[0].substring(5, 8);
-        this.destination_airport = this.text[2].substring(5, 8);
+
+        let extra_day = this.text[2].substring(5, 7) === "+1";
+        if (extra_day) {
+            this.destination_airport = this.text[2].substring(7, 10);
+        }
+        else {
+            this.destination_airport = this.text[2].substring(5, 8);
+        }
+        
     
         if (this.origin_airport == route_origin_airport) {
             this.origin_dt = new Date(dates[0]);    
-            this.destination_dt = new Date(dates[1]);        
+            this.destination_dt = new Date(dates[0]);        
         }
         else {
             this.origin_dt = new Date(dates[1]);
-            this.destination_dt = new Date(dates[0]);
+            this.destination_dt = new Date(dates[1]);
         }
         let origin_time = this.text[0].substring(0, 5).split(":");
-        console.log(origin_time);
         this.origin_dt.setHours(origin_time[0], origin_time[1]);
         let destination_time = this.text[2].substring(0, 5).split(":");
-        console.log(destination_time);
         this.destination_dt.setHours(destination_time[0], destination_time[1]);
 
-        if (this.text[2].substring(5, 7) === "+1") {
-            console.log(this.destination_dt.getDate());
+        if (extra_day) {
             this.destination_dt.setDate(this.destination_dt.getDate() + 1);
         }
+
+        this.carrier_code = carriers[$(this.selector).find("img").attr("alt")];   
+
+        this.request_delay();
+    }
+
+    get_params() {
+        var params = {}
+        params["carrier_code"] = this.carrier_code;
+        params["origin_airport"] = this.origin_airport;
+        params["destination_airport"] = this.destination_airport;
+        params["origin_dt"] = moment(this.origin_dt).format("DD/MM/YY HH:MM");
+        params["destination_dt"] = moment(this.destination_dt).format("DD/MM/YY HH:MM");
+        return params;
+    }
+
+    request_delay() {
+        var params = this.get_params();
+        if (params["carrier_code"]) {
+            params = $.param(params);
+
+            let url = 'http://127.0.0.1:8000/predict/?' + params; 
+            chrome.runtime.sendMessage(
+                url,
+                this.handle_response
+          );
+
+            // fetch('http://127.0.0.1:8000/predict/?' + params)
+            // .then(r => console.log(r))
+            // .then(result => {
+            //     console.log("Result: " + result);
+            // })
+        }
+    }
+
+    handle_response(response) {
+        console.log(response);
     }
 }
 
@@ -48,7 +103,6 @@ function get_dates() {
     console.log("Get dates");
     elems = $("[id='datepicker']");
     $.each(elems, function(index, value) {
-        console.log($(value).attr('aria-label'));
         dates.push(new Date($(value).attr('aria-label')));
     });
     console.log("Dates ready: " + dates);
@@ -75,7 +129,8 @@ function get_flights() {
     flights_selector = $("*[class^=LegDetails]");
     flights = []
     $.each(flights_selector, function (index, value) {
-        flights.push(new Flight(index, value, dates, origin_airport, destination_airport));
+        if ($(value).text().includes("Direct"))
+            flights.push(new Flight(index, value, dates, origin_airport, destination_airport));
     })
     console.log(flights);
 }
