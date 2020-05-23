@@ -11,27 +11,31 @@ let carriers = {
     "Southwest Airlines": "WN"
 }
 
-
-function handle_response(result) {
-    console.log(result);
-}
-
 class Flight {
-    constructor(index, selector, dates, route_origin_airport, route_destination_airport) {
-        this.index = index;
+    constructor(selector, dates, route_origin_airport) {
         this.selector = selector;
+        this.raw_text = $(selector).text();
         this.text = $(selector).text().split(/\b\s+/);
-        this.origin_airport = this.text[0].substring(5, 8);
+        this.extra_day = this.text[2].substring(5, 7) === "+1";
+        
+        this.set_airports();
+        this.set_datetimes(dates, route_origin_airport);     
+        this.set_carrier();
+        
+        this.request_delay();
+    }
 
-        let extra_day = this.text[2].substring(5, 7) === "+1";
-        if (extra_day) {
+    set_airports() {
+        this.origin_airport = this.text[0].substring(5, 8);
+        if (this.extra_day) {
             this.destination_airport = this.text[2].substring(7, 10);
         }
         else {
             this.destination_airport = this.text[2].substring(5, 8);
         }
-        
-    
+    }
+
+    set_datetimes(dates, route_origin_airport) {
         if (this.origin_airport == route_origin_airport) {
             this.origin_dt = new Date(dates[0]);    
             this.destination_dt = new Date(dates[0]);        
@@ -45,13 +49,24 @@ class Flight {
         let destination_time = this.text[2].substring(0, 5).split(":");
         this.destination_dt.setHours(destination_time[0], destination_time[1]);
 
-        if (extra_day) {
+        if (this.extra_day) {
             this.destination_dt.setDate(this.destination_dt.getDate() + 1);
         }
+    }
+    
+    set_carrier() {
+        this.carrier_code = carriers[$(this.selector).find("img").attr("alt")];  
 
-        this.carrier_code = carriers[$(this.selector).find("img").attr("alt")];   
-
-        this.request_delay();
+        // cover 'Operated by' case
+        if (this.carrier_code == undefined) {
+            let raw_text = $(this.selector).text();
+            if (raw_text.includes("Operated by American Airlines")) {
+                this.carrier_code = carriers["American Airlines"];
+            }
+            else if (raw_text.includes("Operated by Delta")) {
+                this.carrier_code = carriers["Delta"];
+            }
+        } 
     }
 
     get_params() {
@@ -65,12 +80,12 @@ class Flight {
     }
 
     on_get_response = function(response, sender, sendResponse) {
-        console.log("from content: " + response);
+        // console.log("from content: " + response);
         var some_span = document.createElement('span');
         some_span.innerHTML = "This flight has " + Math.round(parseFloat(response) * 100) + "% chances to be delayed.";
-        some_span.setAttribute("class", "tooltiptext");
+        some_span.setAttribute("class", "delay_tooltiptext");
 
-        let tooltip = $(this.selector).attr("class", "cool_tooltip");
+        let tooltip = $(this.selector).addClass("delay_tooltip");
         $(tooltip).append(some_span);
     }
 
@@ -92,12 +107,10 @@ var dates = [], origin_airport, destination_airport;
 
 function waitForElementToDisplay(selector, time, callback) {
     if(document.querySelector(selector) != null && document.querySelector(selector).length != 0) {
-        console.log("The element is displayed, you can put your code instead of this alert.");
         callback();
         return;
     }
     else {
-        console.log("Start timeout");
         setTimeout(function() {
             waitForElementToDisplay(selector, time, callback);
         }, time);
@@ -105,23 +118,17 @@ function waitForElementToDisplay(selector, time, callback) {
 }
 
 function get_dates() {
-    console.log("Get dates");
     elems = $("[id='datepicker']");
     $.each(elems, function(index, value) {
         dates.push(new Date($(value).attr('aria-label')));
     });
-    console.log("Dates ready: " + dates);
 }
 
 function get_airports() {
-    console.log("Get airports");
     route = $("#flights-search-summary-root > div > section > div.searchDetailsNudgerContainer-3NQaR > div > span").text();
-    console.log("route: " + route);
     airports = [...route.matchAll(/\(([A-Z]*)\)/g)];
-    console.log(airports);
     origin_airport = airports[0][1];
     destination_airport = airports[1][1];
-    console.log("Airports done: " + origin_airport + " " + destination_airport);
 }
 
 function get_summary() {
@@ -130,40 +137,38 @@ function get_summary() {
 }
 
 function get_flights() {
-    console.log("Get flights");
     flights_selector = $("*[class^=LegDetails]");
     flights = []
     $.each(flights_selector, function (index, value) {
         if ($(value).text().includes("Direct"))
-            flights.push(new Flight(index, value, dates, origin_airport, destination_airport));
+            flights.push(new Flight(value, dates, origin_airport));
     })
     console.log(flights);
 }
 
-function observe_flights() {
-    console.log("Start observer");
-    var observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            for (var i = 0; i < mutation.addedNodes.length; i++)
-                if (mutation.addedNodes.length) {
-                    for (mut of mutation.addedNodes) {
-                        let new_flights = $(mut).find("[class^=LegDetails]");
-                        for (flight of new_flights) {
-                            if ($(flight).text().includes("Direct"))
-                                flights.push(new Flight(0, flight, dates, origin_airport, destination_airport));
-                        }
+function handle_mutations(mutations) {
+    mutations.forEach(function(mutation) {
+        for (var i = 0; i < mutation.addedNodes.length; i++)
+            if (mutation.addedNodes.length) {
+                for (mut of mutation.addedNodes) {
+                    let new_flights = $(mut).find("[class^=LegDetails]");
+                    for (flight of new_flights) {
+                        if ($(flight).text().includes("Direct"))
+                            flights.push(new Flight(flight, dates, origin_airport));
                     }
                 }
-            })
-    });
+            }
+        })
+}
+
+function observe_flights() {
+    var observer = new MutationObserver(handle_mutations);
     let result_list = $(".Results_dayViewItems__3dVwy");
     observer.observe(result_list[0], { childList: true });
 }
 
 $(document).ready(function() {
-    console.log("Document ready");
     elems = $("[id='datepicker']");
-    console.log(elems);
 
     waitForElementToDisplay("[id='datepicker']", 100, get_summary);
     waitForElementToDisplay("*[class^=LegDetails]", 100, get_flights);

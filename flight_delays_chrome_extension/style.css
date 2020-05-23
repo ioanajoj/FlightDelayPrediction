@@ -1,10 +1,10 @@
-.cool_tooltip {
+.delay_tooltip {
   position: relative;
   display: inline-block;
   border-bottom: 1px dotted black;
 }
 
-.cool_tooltip .tooltiptext {
+.delay_tooltip .delay_tooltiptext {
   visibility: hidden;
   width: 120px;
   background-color: #555;
@@ -21,7 +21,7 @@
   transition: opacity 0.3s;
 }
 
-.cool_tooltip .tooltiptext::after {
+.delay_tooltip .delay_tooltiptext::after {
   content: "";
   position: absolute;
   top: 100%;
@@ -32,7 +32,7 @@
   border-color: #555 transparent transparent transparent;
 }
 
-.cool_tooltip:hover .tooltiptext {
+.delay_tooltip:hover .delay_tooltiptext {
   visibility: visible;
   opacity: 1;
 }
