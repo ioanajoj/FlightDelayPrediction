@@ -20,6 +20,7 @@ class WeatherPool:
         if db_weather:
             return db_weather
         # request from API
+        print("requesting weather")
         weather = cls.request_weather(iata_code, dt, location)
         return weather
 
@@ -28,7 +29,9 @@ class WeatherPool:
         dt = datetime.strptime(dt, DATETIME_FORMAT).replace(minute=0)
         result = WeatherForecast.objects.filter(iata_code=iata_code, dt=dt).order_by('-id').first()
         if not result:
-            result = WeatherSummary.objects.filter(iata_code=iata_code, month=dt.month).first()
+            result = WeatherSummary.objects.filter(iata_code=iata_code, month=dt.month-1).first()
+            if result:
+                result.wind_speed /= 2
         if result:
             return {TEMPERATURES[location]: result.temperature,
                     PRECIPITATION[location]: 0,

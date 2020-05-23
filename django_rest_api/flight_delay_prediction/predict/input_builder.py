@@ -29,12 +29,12 @@ class ModelInputBuilder:
     def get_weather(self):
         weather = {}
         weather_origin = self._access_weather(self.params['origin_airport'],
-                                                self.params['origin_dt'],
-                                                AIRPORTS['origin'])
+                                              self.params['origin_dt'],
+                                              AIRPORTS['origin'])
         weather.update(weather_origin)
         weather_destination = self._access_weather(self.params['destination_airport'],
-                                                     self.params['destination_dt'],
-                                                     AIRPORTS['destination'])
+                                                   self.params['destination_dt'],
+                                                   AIRPORTS['destination'])
         weather.update(weather_destination)
         return weather
 

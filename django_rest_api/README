@@ -15,3 +15,7 @@ WeatherAPI
 requirements:
 scikit-learn=0.22.1
 
+run with:
+conda activate django_rest_api
+python manage.py runserver -nothreding
+
