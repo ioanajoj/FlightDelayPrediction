@@ -140,11 +140,32 @@ function get_flights() {
     console.log(flights);
 }
 
+function observe_flights() {
+    console.log("Start observer");
+    var observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            for (var i = 0; i < mutation.addedNodes.length; i++)
+                if (mutation.addedNodes.length) {
+                    for (mut of mutation.addedNodes) {
+                        let new_flights = $(mut).find("[class^=LegDetails]");
+                        for (flight of new_flights) {
+                            if ($(flight).text().includes("Direct"))
+                                flights.push(new Flight(0, flight, dates, origin_airport, destination_airport));
+                        }
+                    }
+                }
+            })
+    });
+    let result_list = $(".Results_dayViewItems__3dVwy");
+    observer.observe(result_list[0], { childList: true });
+}
+
 $(document).ready(function() {
     console.log("Document ready");
-    // $.getScript("domain.js", function() {console.log("Loaded model file");});
     elems = $("[id='datepicker']");
     console.log(elems);
+
     waitForElementToDisplay("[id='datepicker']", 100, get_summary);
     waitForElementToDisplay("*[class^=LegDetails]", 100, get_flights);
+    waitForElementToDisplay("*[class^=LegDetails]", 100, observe_flights);
 });
