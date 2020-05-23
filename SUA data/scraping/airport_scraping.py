@@ -49,14 +49,14 @@ class Airport:
     def __hash__(self):
         return hash(self.iata_code)
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     open_airports_path = os.path.join('ourairports', 'ourairports.csv')
     df = pd.read_csv(open_airports_path)
     usa_airports = {kwargs['iata_code']: Airport(**kwargs) for kwargs in df.to_dict(orient='records')}
 
     column_names = ['iata_code', 'airport_name', 'latitude_deg',
-                                               'longitude_deg', 'elevation_ft', 'city']
+                    'longitude_deg', 'elevation_ft', 'city']
     airports_data_frame = pd.DataFrame(columns=column_names)
     for link in soup.find_all('a'):
         call = link.get('href')
