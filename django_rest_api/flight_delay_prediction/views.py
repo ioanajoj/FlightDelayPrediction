@@ -1,7 +1,5 @@
 from django.http import HttpResponse, JsonResponse
-from django.shortcuts import render
 
-from flight_delay_prediction.constant import INPUT_NAMES
 from flight_delay_prediction.predict.input_builder import ModelInputBuilder
 
 
