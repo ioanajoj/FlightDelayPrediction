@@ -96,9 +96,9 @@ class Flight {
 
             let url = 'http://127.0.0.1:8000/predict/?' + params; 
             chrome.runtime.sendMessage(
-                url,
+                {url: url},
                 this.on_get_response.bind(this)
-          );
+            );
         }
     }
 }
@@ -117,18 +117,23 @@ function waitForElementToDisplay(selector, time, callback) {
     }
 }
 
+function check_dates() {
+    chrome.runtime.sendMessage({type: 'notification'});
+    //chrome.notifications.create('limitNotif', notification_options);
+}
+
 function get_dates() {
     elems = $("[id='datepicker']");
     $.each(elems, function(index, value) {
         dates.push(new Date($(value).attr('aria-label')));
     });
+    check_dates();
 }
 
 function get_airports() {
     route = $("#flights-search-summary-root > div > section > div.searchDetailsNudgerContainer-3NQaR > div > span").text();
     airports = [...route.matchAll(/\(([A-Z]*)\)/g)];
     origin_airport = airports[0][1];
-    destination_airport = airports[1][1];
 }
 
 function get_summary() {

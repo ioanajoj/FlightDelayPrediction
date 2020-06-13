@@ -2,22 +2,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flight Delay Prediction Manual Input</title>
+    <style type="text/css" >
+        body {
+            min-width: 300px;
+            position: relative;
+            vertical-align: middle;
+            border-radius: 6px;
+            background-color: #555555;
+            color: #FFFFFF;
+            padding: 5px 0;
+        }
+    </style>
 </head>
-<body id="body">
-    <form>
-        <label for="carrier_code">Carrier Code:</label>
-        <input type="text" id="carrier_code" name="carrier_code", value="AA">
-        <label for="origin_airport">Origin Airport:</label>
-        <input type="text" id="origin_airport" name="origin_airport", value="JFK">
-        <label for="destination_airport">Destination Airport:</label>
-        <input type="text" id="destination_airport" name="destination_airport", value="LAX">
-        <label for="origin_dt">Departure datetime</label>
-        <input type="datetime" id="origin_dt" name="origin_dt", value="21/5/20 08:00">
-        <label for="destination_dt">Arrival datetime</label>
-        <input type="datetime" id="destination_dt" name="destination_dt", value="21/5/20 11:00">
-    </form>
-    <button>Predict</button>
-    <script src="popup.js"></script>
+<body id="details_popup">
+    <h1>Flight Delay Prediction</h1>
+    <p>Hello there! Thank you for choosing this extension for your post Covid-19 flights!</p>
+
+    <p>The predictions that you see on the skyscanner page are of two types:
+        <ul> for those flights scheduled to depart within 15 days from now, real weather forecast is used, so we expect them to be more precise</ul>
+        <ul> flights departing later than 15 days from now have predictions based on weather means during the chosen period of time</ul>
+    </p>
 </body>
 </html>
