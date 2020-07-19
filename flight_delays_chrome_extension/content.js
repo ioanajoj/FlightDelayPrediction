@@ -16,6 +16,10 @@ class Flight {
         this.selector = selector;
         this.raw_text = $(selector).text();
         this.text = $(selector).text().split(/\b\s+/);
+        if (this.text[0].includes("Direct")) {
+            this.text[2] = this.text[1];
+            this.text[1] = "00Direct";
+        }
         this.extra_day = this.text[2].substring(5, 7) === "+1";
         
         this.set_airports();
