@@ -26,8 +26,7 @@ def index(request):
         print(ex)
         return HttpResponse("Unfortunately something went wrong :)")
 
-    return JsonResponse({'result': round(1 - prediction[0,0], 2)})
-    # return HttpResponse(f"{}")
+    return JsonResponse({'result': round(1 - prediction[0, 0], 2)})
 
 # def predict(carrier_code, origin_airport, destination_airport, origin_dt, destination_dt):
 #     payload = {'carrier_code': carrier_code,
